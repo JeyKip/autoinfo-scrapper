@@ -1,0 +1,2 @@
+class HexDecodingError(Exception):
+    pass
