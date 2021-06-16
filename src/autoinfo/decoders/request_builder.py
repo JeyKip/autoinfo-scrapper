@@ -7,9 +7,23 @@ class RequestBuilder:
         self.__base_url = base_url
         self.__params = dict()
         self.__hex_decoder = HexDecoder()
+        self.__run_before_evaluation_func = None
 
     def add_param(self, param_name, value):
         self.__params[param_name] = value
+
+    def add_params(self, params: dict):
+        if not params or len(params) == 0:
+            return
+
+        for key, value in params.items():
+            self.add_param(key, value)
+
+    def exec_before_evaluation(self, func):
+        if func is None or callable(func):
+            self.__run_before_evaluation_func = func
+        else:
+            raise ValueError("Argument 'func' should be function or callable object.")
 
     def build(self):
         pure_query_str = self.__build_query_str()
@@ -19,6 +33,9 @@ class RequestBuilder:
         return query_str
 
     def __build_query_str(self):
+        if self.__run_before_evaluation_func is not None:
+            self.__run_before_evaluation_func(self)
+
         return '&'.join([f"{key}={value}" for key, value in self.__params.items()])
 
     def __encode(self, value):

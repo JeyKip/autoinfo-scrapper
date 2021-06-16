@@ -1,2 +1,2 @@
-from .base_store import *
-from .maker_store import *
+from .base_store import BaseStore
+from .maker_store import MakerStore

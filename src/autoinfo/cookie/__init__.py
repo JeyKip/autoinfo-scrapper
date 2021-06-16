@@ -1,3 +1,3 @@
-from .cookie import *
-from .errors import *
-from .provider import *
+from .cookie import Cookie
+from .errors import CookieCannotBeResolvedError, VariableCannotBeResolvedError
+from .provider import CookieProvider
