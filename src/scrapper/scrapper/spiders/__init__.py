@@ -1,1 +1,3 @@
-from .autoinfo_spider import AutoInfoSpider
+from .autoinfo_base_spider import AutoInfoBaseSpider
+from .autoinfo_makers_spider import AutoInfoMakersSpider
+from .autoinfo_models_spider import AutoInfoModelsSpider

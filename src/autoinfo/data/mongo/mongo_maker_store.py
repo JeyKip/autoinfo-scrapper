@@ -30,3 +30,11 @@ class MongoMakerStore(MakerStore, MongoBaseStore):
             return None
 
         return Maker(entity.id, entity.name)
+
+    def find_by_name(self, name):
+        entity = self.doc_type.objects(name=name).first()
+
+        if not entity:
+            return None
+
+        return Maker(entity.id, entity.name)

@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from autoinfo.data.abstraction import BaseStore
 
 
-class MakerStore(BaseStore, ABC):
+class ModelStore(BaseStore, ABC):
     @abstractmethod
-    def find_by_name(self, name):
+    def find_by_maker_id(self, maker_id):
         raise NotImplementedError
