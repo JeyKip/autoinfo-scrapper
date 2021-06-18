@@ -6,10 +6,11 @@ from scrapy.utils.project import get_project_settings
 from twisted.internet.defer import inlineCallbacks
 
 from autoinfo.cookie import CookieProvider
-from autoinfo.data.mongo import MongoConnector, MongoConnectionSettings, MongoMakerStore, MongoModelStore
+from autoinfo.data.mongo import MongoConnector, MongoConnectionSettings, MongoMakerStore, MongoModelStore, \
+    MongoSubModelStore
 from autoinfo.services import AutoDetailsService
 from autoinfo.utils import get_value_safely
-from scrapper.scrapper.spiders import AutoInfoMakersSpider, AutoInfoModelsSpider
+from scrapper.scrapper.spiders import AutoInfoSubModelsSpider, AutoInfoMakersSpider, AutoInfoModelsSpider
 
 
 def start_scrapping():
@@ -30,9 +31,10 @@ def start_scrapping():
         # create concrete stores
         maker_store = MongoMakerStore()
         models_store = MongoModelStore()
+        sub_models_store = MongoSubModelStore()
 
         # create services
-        auto_details_service = AutoDetailsService(maker_store, models_store)
+        auto_details_service = AutoDetailsService(maker_store, models_store, sub_models_store)
 
         # create utils classes
         cookie_provider = CookieProvider()
@@ -52,6 +54,7 @@ def start_scrapping():
             base_api_url = "https://online.autoinfo.com.au/oscar/Aut01nf0iiqq4/a"
             yield process.crawl(AutoInfoMakersSpider, auto_details_service, cookie_provider, base_api_url)
             yield process.crawl(AutoInfoModelsSpider, auto_details_service, cookie_provider, base_api_url)
+            yield process.crawl(AutoInfoSubModelsSpider, auto_details_service, base_api_url)
 
         run_spiders()
         process.start()

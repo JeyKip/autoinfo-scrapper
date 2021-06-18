@@ -21,19 +21,22 @@ class MongoMakerStore(MakerStore, MongoBaseStore):
     doc_type = MongoMaker
 
     def get_all(self) -> List[Maker]:
-        return [Maker(x.id, x.name) for x in self.doc_type.objects]
+        return [self.__create_model(x) for x in self.doc_type.objects]
 
     def find_by_id(self, _id) -> Optional[Maker]:
-        entity = self.doc_type.objects(id=_id).first()
-
-        if not entity:
-            return None
-
-        return Maker(entity.id, entity.name)
+        return self.__find_single(id=_id)
 
     def find_by_name(self, name):
-        entity = self.doc_type.objects(name=name).first()
+        return self.__find_single(name=name)
 
+    def __find_single(self, **kwargs):
+        entity = self.doc_type.objects(**kwargs).first()
+        model = self.__create_model(entity)
+
+        return model
+
+    # noinspection PyMethodMayBeStatic
+    def __create_model(self, entity: MongoMaker):
         if not entity:
             return None
 

@@ -9,7 +9,7 @@ class HexDecoder:
     def from_hex_to_char_array(self, hex_string):
         try:
             hex_length = self.__validate_hex_string_length(hex_string)
-            return [self.__decode_symbol(hex_string[i:i + 2]) for i in range(0, hex_length - 2, 2)]
+            return [self.__decode_symbol(hex_string[i:i + 2]) for i in range(0, hex_length - 1, 2)]
         except Exception as error:
             traceback.print_tb(error.__traceback__)
             raise HexDecodingError("Cannot convert hex string to char array because input string has incorrect format.")

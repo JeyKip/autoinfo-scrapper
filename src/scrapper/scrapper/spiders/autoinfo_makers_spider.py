@@ -3,13 +3,13 @@ from typing import List
 from scrapy import Request
 
 from autoinfo.data.plain import Maker
-from . import AutoInfoBaseSpider
+from . import AutoInfoCookieBaseSpider
 from .parsers import MakersResponseParser
 from ..items import MakersListItem
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-class AutoInfoMakersSpider(AutoInfoBaseSpider):
+class AutoInfoMakersSpider(AutoInfoCookieBaseSpider):
     name = 'autoinfo-makers-spider'
 
     def start_requests(self):

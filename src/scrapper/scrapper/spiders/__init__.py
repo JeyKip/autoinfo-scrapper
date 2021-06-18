@@ -1,3 +1,5 @@
 from .autoinfo_base_spider import AutoInfoBaseSpider
+from .autoinfo_cookie_base_spider import AutoInfoCookieBaseSpider
 from .autoinfo_makers_spider import AutoInfoMakersSpider
 from .autoinfo_models_spider import AutoInfoModelsSpider
+from .autoinfo_sub_models_spider import AutoInfoSubModelsSpider

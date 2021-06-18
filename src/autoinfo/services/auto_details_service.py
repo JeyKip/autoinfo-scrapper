@@ -1,13 +1,14 @@
 from typing import List
 
-from autoinfo.data.abstraction import MakerStore, ModelStore
-from autoinfo.data.plain import Maker, Entity, Model
+from autoinfo.data.abstraction import MakerStore, ModelStore, SubModelStore
+from autoinfo.data.plain import Maker, Entity, Model, SubModel
 
 
 class AutoDetailsService:
-    def __init__(self, maker_store: MakerStore, models_store: ModelStore):
+    def __init__(self, maker_store: MakerStore, models_store: ModelStore, sub_model_store: SubModelStore):
         self.__maker_store = maker_store
         self.__models_store = models_store
+        self.__sub_model_store = sub_model_store
 
     def save_makers(self, makers: List[Maker]):
         existing_makers = self.__maker_store.get_all()
@@ -15,7 +16,7 @@ class AutoDetailsService:
 
         self.__maker_store.save(makers_to_save)
 
-    def load_makers(self):
+    def load_makers(self) -> List[Maker]:
         return self.__maker_store.get_all()
 
     def save_models(self, maker_name: str, models: List[Model]):
@@ -30,6 +31,21 @@ class AutoDetailsService:
                                                         lambda entity: (entity.maker_id, entity.name))
 
         self.__models_store.save(models_to_save)
+
+    def load_models(self) -> List[Model]:
+        return self.__models_store.get_all()
+
+    def save_sub_models(self, model_id: str, sub_models: List[SubModel]):
+        existing_sub_models = self.__sub_model_store.find_by_model_id(model_id)
+        sub_models = sub_models or []
+
+        for sm in sub_models:
+            sm.model_id = model_id
+
+        sub_models_to_save = self.__filter_entities_to_save(existing_sub_models, sub_models,
+                                                            lambda entity: (entity.model_id, entity.name))
+
+        self.__sub_model_store.save(sub_models_to_save)
 
     # noinspection PyMethodMayBeStatic
     def __filter_entities_to_save(self, existing_entities: List[Entity], entities_to_save: List[Entity],
