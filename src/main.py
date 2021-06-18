@@ -10,7 +10,8 @@ from autoinfo.data.mongo import MongoConnector, MongoConnectionSettings, MongoMa
     MongoSubModelStore
 from autoinfo.services import AutoDetailsService
 from autoinfo.utils import get_value_safely
-from scrapper.scrapper.spiders import AutoInfoSubModelsSpider, AutoInfoMakersSpider, AutoInfoModelsSpider
+from scrapper.scrapper.spiders import AutoInfoSubModelsSpider, AutoInfoMakersSpider, AutoInfoModelsSpider, \
+    AutoInfoYearsSpider
 
 
 def start_scrapping():
@@ -55,6 +56,7 @@ def start_scrapping():
             yield process.crawl(AutoInfoMakersSpider, auto_details_service, cookie_provider, base_api_url)
             yield process.crawl(AutoInfoModelsSpider, auto_details_service, cookie_provider, base_api_url)
             yield process.crawl(AutoInfoSubModelsSpider, auto_details_service, base_api_url)
+            yield process.crawl(AutoInfoYearsSpider, auto_details_service, base_api_url)
 
         run_spiders()
         process.start()

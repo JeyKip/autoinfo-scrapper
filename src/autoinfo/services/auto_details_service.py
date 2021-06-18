@@ -47,6 +47,22 @@ class AutoDetailsService:
 
         self.__sub_model_store.save(sub_models_to_save)
 
+    def load_sub_models(self) -> List[SubModel]:
+        return self.__sub_model_store.get_all()
+
+    def save_years(self, model_id: str, sub_model_id: str, years: List[int]):
+        if not model_id and not sub_model_id:
+            raise ValueError("model_id or sub_model_id parameter should be specified.")
+
+        if sub_model_id:
+            sub_model = self.__sub_model_store.find_by_id(sub_model_id)
+            sub_model.years = years
+            self.__sub_model_store.save(sub_model)
+        else:
+            model = self.__models_store.find_by_id(model_id)
+            model.years = years
+            self.__models_store.save(model)
+
     # noinspection PyMethodMayBeStatic
     def __filter_entities_to_save(self, existing_entities: List[Entity], entities_to_save: List[Entity],
                                   unique_key_supplier):

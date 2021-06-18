@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from mongoengine import Document, StringField
+from mongoengine import Document, StringField, SortedListField, IntField
 
 from . import MongoBaseStore
 from ..abstraction import ModelStore
@@ -13,6 +13,7 @@ class MongoModel(Document):
     name = StringField(required=True, unique_with="maker_id")
     script_version = StringField(required=True)
     cookie = StringField(required=True)
+    years = SortedListField(IntField(), reverse=True)
 
     meta = {
         'db_alias': 'core',
@@ -41,4 +42,5 @@ class MongoModelStore(ModelStore, MongoBaseStore):
         if not entity:
             return None
 
-        return Model(entity.id, entity.maker_id, entity.code, entity.name, entity.script_version, entity.cookie)
+        return Model(entity.id, entity.maker_id, entity.code, entity.name, entity.script_version, entity.cookie,
+                     entity.years)

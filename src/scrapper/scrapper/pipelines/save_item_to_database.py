@@ -1,5 +1,5 @@
 from autoinfo.services import AutoDetailsService
-from scrapper.scrapper.items import MakersListItem, ModelsListItem, SubModelsListItem
+from scrapper.scrapper.items import MakersListItem, ModelsListItem, SubModelsListItem, YearsListItem
 
 
 class SaveItemToDatabasePipeline:
@@ -8,7 +8,8 @@ class SaveItemToDatabasePipeline:
         self.__handlers = {
             MakersListItem.__name__: self.__handle_makers_list_item,
             ModelsListItem.__name__: self.__handle_models_list_item,
-            SubModelsListItem.__name__: self.__handle_sub_models_list_item
+            SubModelsListItem.__name__: self.__handle_sub_models_list_item,
+            YearsListItem.__name__: self.__handle_years_list_item
         }
 
     @classmethod
@@ -31,3 +32,6 @@ class SaveItemToDatabasePipeline:
 
     def __handle_sub_models_list_item(self, item):
         self.__auto_details_service.save_sub_models(item["model_id"], item["sub_models"])
+
+    def __handle_years_list_item(self, item):
+        self.__auto_details_service.save_years(item["model_id"], item["sub_model_id"], item["years"])
