@@ -1,4 +1,5 @@
-from typing import List
+from collections import defaultdict
+from typing import List, Dict
 
 from autoinfo.data.abstraction import MakerStore, ModelStore, SubModelStore
 from autoinfo.data.plain import Maker, Entity, Model, SubModel
@@ -19,6 +20,9 @@ class AutoDetailsService:
     def load_makers(self) -> List[Maker]:
         return self.__maker_store.get_all()
 
+    def load_makers_dict(self) -> Dict[str, Maker]:
+        return {maker.id: maker for maker in self.load_makers()}
+
     def save_models(self, maker_name: str, models: List[Model]):
         maker = self.__maker_store.find_by_name(maker_name)
         existing_models = self.__models_store.find_by_maker_id(maker.id)
@@ -35,6 +39,9 @@ class AutoDetailsService:
     def load_models(self) -> List[Model]:
         return self.__models_store.get_all()
 
+    def load_models_dict(self) -> Dict[str, Model]:
+        return {model.id: model for model in self.load_models()}
+
     def save_sub_models(self, model_id: str, sub_models: List[SubModel]):
         existing_sub_models = self.__sub_model_store.find_by_model_id(model_id)
         sub_models = sub_models or []
@@ -50,18 +57,26 @@ class AutoDetailsService:
     def load_sub_models(self) -> List[SubModel]:
         return self.__sub_model_store.get_all()
 
+    def load_sub_models_by_model_id_dict(self) -> Dict[str, List[SubModel]]:
+        result = defaultdict(list)
+
+        for sub in self.load_sub_models():
+            result[sub.model_id].append(sub)
+
+        return result
+
     def save_years(self, model_id: str, sub_model_id: str, years: List[int]):
-        if not model_id and not sub_model_id:
-            raise ValueError("model_id or sub_model_id parameter should be specified.")
+        if not model_id:
+            raise ValueError("model_id is required parameter for save_years method.")
 
         if sub_model_id:
             sub_model = self.__sub_model_store.find_by_id(sub_model_id)
             sub_model.years = years
             self.__sub_model_store.save(sub_model)
-        else:
-            model = self.__models_store.find_by_id(model_id)
-            model.years = years
-            self.__models_store.save(model)
+
+        model = self.__models_store.find_by_id(model_id)
+        model.years = set().union(model.years or [], years)
+        self.__models_store.save(model)
 
     # noinspection PyMethodMayBeStatic
     def __filter_entities_to_save(self, existing_entities: List[Entity], entities_to_save: List[Entity],

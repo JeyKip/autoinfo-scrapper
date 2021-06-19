@@ -2,7 +2,7 @@ from typing import List
 
 from scrapy import Request
 
-from autoinfo.data.plain import Model, Maker
+from autoinfo.data.plain import Model, Maker, SubModel
 from autoinfo.decoders import HexDecoder
 from autoinfo.services import AutoDetailsService
 from . import AutoInfoBaseSpider
@@ -20,19 +20,21 @@ class AutoInfoYearsSpider(AutoInfoBaseSpider):
         self.__hex_decoder = HexDecoder()
 
     def start_requests(self):
-        makers = {maker.id: maker for maker in self.auto_details_service.load_makers()}
-        models = {model.id: model for model in self.auto_details_service.load_models()}
+        makers = self.auto_details_service.load_makers_dict()
+        sub_models = self.auto_details_service.load_sub_models_by_model_id_dict()
 
-        for model in models.values():
-            yield self.__create_download_years_request(makers[model.maker_id], model)
-
-        for sub_model in self.auto_details_service.load_sub_models():
-            model = models[sub_model.model_id]
+        for model in self.auto_details_service.load_models():
             maker = makers[model.maker_id]
 
-            yield self.__create_download_years_request(maker, model, sub_model)
+            # if model has submodels we need to request all years for submodels and concatenate them in the model object
+            # otherwise we need to request all years by model directly
+            if model.id in sub_models:
+                for sub in sub_models[model.id]:
+                    yield self.__create_download_years_request(maker, model, sub)
+            else:
+                yield self.__create_download_years_request(maker, model)
 
-    def __create_download_years_request(self, maker: Maker, model: Model, sub_model=None):
+    def __create_download_years_request(self, maker: Maker, model: Model, sub_model: SubModel = None):
         sub_model_id = sub_model.id if sub_model else None
         sub_model_name = sub_model.name if sub_model else "ALL"
         sub_model_code = self.__hex_decoder.convert_to_hex_string(sub_model_name)

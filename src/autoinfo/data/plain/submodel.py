@@ -7,4 +7,4 @@ class SubModel(Entity):
         self.name = name
         self.years = years
 
-        super().__init__(model_id)
+        super().__init__(_id)

@@ -24,7 +24,7 @@ class MakersResponseParser:
             if all_makers_passed:
                 maker_name = self.__extract_maker_name(maker_data)
                 if maker_name:
-                    makers.append(Maker(maker_name=maker_name))
+                    makers.append(Maker(name=maker_name))
             elif "All Makes" in maker_data:
                 all_makers_passed = True
 

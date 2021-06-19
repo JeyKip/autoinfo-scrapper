@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from mongoengine import Document, StringField, SortedListField, IntField
+from mongoengine import Document, StringField, SortedListField, IntField, ObjectIdField
 
 from . import MongoBaseStore
 from ..abstraction import ModelStore
@@ -8,7 +8,7 @@ from ..plain import Model
 
 
 class MongoModel(Document):
-    maker_id = StringField(required=True)
+    maker_id = ObjectIdField(required=True)
     code = StringField(required=True)
     name = StringField(required=True, unique_with="maker_id")
     script_version = StringField(required=True)

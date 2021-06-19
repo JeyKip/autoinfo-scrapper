@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from mongoengine import Document, StringField, SortedListField, IntField
+from mongoengine import Document, StringField, SortedListField, IntField, ObjectIdField
 
 from . import MongoBaseStore
 from ..abstraction import SubModelStore
@@ -8,7 +8,7 @@ from ..plain import SubModel
 
 
 class MongoSubModel(Document):
-    model_id = StringField(required=True)
+    model_id = ObjectIdField(required=True)
     name = StringField(required=True, unique_with="model_id")
     years = SortedListField(IntField(), reverse=True)
 
