@@ -15,6 +15,10 @@ class AutoInfoCookieBaseSpider(AutoInfoBaseSpider):
         self.__cookie = self.__cookie_provider.get_cookie()
 
     @property
+    def cookie_provider(self):
+        return self.__cookie_provider
+
+    @property
     def script_version(self):
         return self.__cookie.script_version
 

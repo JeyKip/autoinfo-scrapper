@@ -43,6 +43,10 @@ class AutoInfoBaseSpider(Spider):
     def decode_response_if_successful(self, response):
         try:
             if 200 <= response.status < 300:
+                # if "Unauthorised use has been detected." in response.text:
+                #     # handle a case when request is banned
+                #     return ""
+
                 return self.__response_decoder.decode(response.text[2:-2]).replace("&nbsp;", "")
 
             return ""

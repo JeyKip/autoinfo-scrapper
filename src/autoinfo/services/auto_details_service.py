@@ -1,15 +1,17 @@
 from collections import defaultdict
 from typing import List, Dict
 
-from autoinfo.data.abstraction import MakerStore, ModelStore, SubModelStore
-from autoinfo.data.plain import Maker, Entity, Model, SubModel
+from autoinfo.data.abstraction import MakerStore, ModelStore, SubModelStore, ModelCookieStore
+from autoinfo.data.plain import Maker, Entity, Model, SubModel, ModelCookie
 
 
 class AutoDetailsService:
-    def __init__(self, maker_store: MakerStore, models_store: ModelStore, sub_model_store: SubModelStore):
+    def __init__(self, maker_store: MakerStore, models_store: ModelStore, sub_model_store: SubModelStore,
+                 model_cookie_store: ModelCookieStore):
         self.__maker_store = maker_store
         self.__models_store = models_store
         self.__sub_model_store = sub_model_store
+        self.__model_cookie_store = model_cookie_store
 
     def save_makers(self, makers: List[Maker]):
         existing_makers = self.__maker_store.get_all()
@@ -33,11 +35,19 @@ class AutoDetailsService:
 
         models_to_save = self.__filter_entities_to_save(existing_models, models,
                                                         lambda entity: (entity.maker_id, entity.name))
+        new_models_count = len(list(filter(lambda item: not item.id, models_to_save)))
 
-        self.__models_store.save(models_to_save)
+        if len(models_to_save) > 0:
+            self.__models_store.save(models_to_save)
+
+        if new_models_count > 0:
+            self.__maker_store.change_handled_models_count(maker.id, new_models_count)
 
     def load_models(self) -> List[Model]:
         return self.__models_store.get_all()
+
+    def load_models_for_maker(self, maker_id):
+        return self.__models_store.find_by_maker_id(maker_id)
 
     def load_models_dict(self) -> Dict[str, Model]:
         return {model.id: model for model in self.load_models()}
@@ -77,6 +87,26 @@ class AutoDetailsService:
         model = self.__models_store.find_by_id(model_id)
         model.years = set().union(model.years or [], years)
         self.__models_store.save(model)
+
+    def save_model_cookie(self, maker_name, model_name, script_version, cookie):
+        existing_cookie = self.__model_cookie_store.find_by_model(maker_name, model_name)
+
+        if existing_cookie:
+            existing_cookie.script_version = script_version
+            existing_cookie.cookie = cookie
+
+            self.__model_cookie_store.save(existing_cookie)
+        else:
+            self.__model_cookie_store.save(ModelCookie(
+                maker_name=maker_name, model_name=model_name,
+                script_version=script_version, cookie=cookie
+            ))
+
+    def get_cookie_for_model(self, maker_name, model_name) -> ModelCookie:
+        return self.__model_cookie_store.find_by_model(maker_name, model_name)
+
+    def set_maker_models_count(self, maker_id, models_count):
+        self.__maker_store.set_models_count(maker_id, models_count)
 
     # noinspection PyMethodMayBeStatic
     def __filter_entities_to_save(self, existing_entities: List[Entity], entities_to_save: List[Entity],

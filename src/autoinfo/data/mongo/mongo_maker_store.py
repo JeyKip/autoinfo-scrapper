@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from mongoengine import Document, StringField
+from mongoengine import Document, StringField, IntField
 
 from autoinfo.data.abstraction import MakerStore
 from . import MongoBaseStore
@@ -9,6 +9,8 @@ from ..plain import Maker
 
 class MongoMaker(Document):
     name = StringField(required=True, unique=True)
+    models_count = IntField(required=True, default=0)
+    handled_models_count = IntField(required=True, default=0)
 
     meta = {
         'db_alias': 'core',
@@ -29,6 +31,12 @@ class MongoMakerStore(MakerStore, MongoBaseStore):
     def find_by_name(self, name):
         return self.__find_single(name=name)
 
+    def set_models_count(self, maker_id, models_count: int):
+        self.doc_type.objects(id=maker_id).update_one(set__models_count=models_count)
+
+    def change_handled_models_count(self, maker_id, change: int):
+        self.doc_type.objects(id=maker_id).update_one(inc__handled_models_count=change)
+
     def __find_single(self, **kwargs):
         entity = self.doc_type.objects(**kwargs).first()
         model = self.__create_model(entity)
@@ -40,4 +48,5 @@ class MongoMakerStore(MakerStore, MongoBaseStore):
         if not entity:
             return None
 
-        return Maker(entity.id, entity.name)
+        return Maker(_id=entity.id, name=entity.name, models_count=entity.models_count,
+                     handled_models_count=entity.handled_models_count)

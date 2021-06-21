@@ -1,5 +1,6 @@
 from .mongo_base_store import MongoBaseStore
 from .mongo_connector import MongoConnector, MongoConnectionSettings
 from .mongo_maker_store import MongoMakerStore
+from .mongo_model_cookie_store import MongoModelCookieStore
 from .mongo_model_store import MongoModelStore
 from .mongo_submodel_store import MongoSubModelStore
