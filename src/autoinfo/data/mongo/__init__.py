@@ -3,4 +3,5 @@ from .mongo_connector import MongoConnector, MongoConnectionSettings
 from .mongo_maker_store import MongoMakerStore
 from .mongo_model_cookie_store import MongoModelCookieStore
 from .mongo_model_store import MongoModelStore
+from .mongo_model_year_store import MongoModelYearStore
 from .mongo_submodel_store import MongoSubModelStore

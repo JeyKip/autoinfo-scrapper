@@ -33,13 +33,17 @@ class AutoInfoModelsSpider(AutoInfoCookieBaseSpider):
 
             yield request
 
-    def __create_download_models_request(self, maker_name, callback):
+    def __create_download_models_request(self, maker_name, callback, script_version=None, cookie=None):
         request_builder = self.create_basic_request_builder()
-        request_builder.add_param("1", maker_name)
-        request_builder.add_param("0", "model")
+        request_builder.add_params({
+            "1": maker_name,
+            "0": "model",
+            "scriptVersion": script_version or self.script_version,
+            "cookie": cookie or self.cookie,
+        })
         request_url = request_builder.build()
 
-        return Request(request_url, callback)
+        return Request(request_url, callback, dont_filter=True)
 
     def __get_multi_models_parser(self, maker_id, maker_name):
         def parse(response):
@@ -59,7 +63,7 @@ class AutoInfoModelsSpider(AutoInfoCookieBaseSpider):
                 script_version, cookie = self.__load_cookies_for_model(maker_name, model.name)
 
                 callback = self.__get_single_model_parser(maker_name, model.name, script_version, cookie)
-                request = self.__create_download_models_request(maker_name, callback)
+                request = self.__create_download_models_request(maker_name, callback, script_version, cookie)
 
                 yield request
 
@@ -74,12 +78,12 @@ class AutoInfoModelsSpider(AutoInfoCookieBaseSpider):
         existing_cookie = self.auto_details_service.get_cookie_for_model(maker_name, model_name)
         if existing_cookie:
             self.logger.debug("==============================")
-            self.logger.debug(f"Skip cookie refreshing for '{maker_name} {model_name}\n")
+            self.logger.debug(f"Skip cookie refreshing for '{maker_name} {model_name}'")
 
             return existing_cookie.script_version, existing_cookie.cookie
         else:
             self.logger.debug("==============================")
-            self.logger.debug(f"Refreshing cookie for '{maker_name} {model_name}'\n")
+            self.logger.debug(f"Refreshing cookie for '{maker_name} {model_name}'")
 
             cookie = self.cookie_provider.get_cookie()
 
@@ -91,7 +95,7 @@ class AutoInfoModelsSpider(AutoInfoCookieBaseSpider):
     def __get_single_model_parser(self, maker_name, model_name, script_version, cookie):
         def parse(response):
             self.logger.debug(
-                f"#{self.__models_parsed + 1}. Parsing '{maker_name} {model_name}' with cookie '{cookie}'\n")
+                f"#{self.__models_parsed + 1}. Parsing '{maker_name} {model_name}' with cookie '{cookie}'")
             decoded_response_text = self.decode_response_if_successful(response)
             models_list: List[Model] = self.__parser(decoded_response_text)
 

@@ -1,17 +1,18 @@
 from collections import defaultdict
 from typing import List, Dict
 
-from autoinfo.data.abstraction import MakerStore, ModelStore, SubModelStore, ModelCookieStore
-from autoinfo.data.plain import Maker, Entity, Model, SubModel, ModelCookie
+from autoinfo.data.abstraction import MakerStore, ModelStore, SubModelStore, ModelCookieStore, ModelYearStore
+from autoinfo.data.plain import Maker, Entity, Model, SubModel, ModelCookie, ModelYear
 
 
 class AutoDetailsService:
-    def __init__(self, maker_store: MakerStore, models_store: ModelStore, sub_model_store: SubModelStore,
-                 model_cookie_store: ModelCookieStore):
+    def __init__(self, maker_store: MakerStore, models_store: ModelStore, submodel_store: SubModelStore,
+                 model_cookie_store: ModelCookieStore, model_year_store: ModelYearStore):
         self.__maker_store = maker_store
         self.__models_store = models_store
-        self.__sub_model_store = sub_model_store
+        self.__submodel_store = submodel_store
         self.__model_cookie_store = model_cookie_store
+        self.__model_year_store = model_year_store
 
     def save_makers(self, makers: List[Maker]):
         existing_makers = self.__maker_store.get_all()
@@ -37,10 +38,10 @@ class AutoDetailsService:
                                                         lambda entity: (entity.maker_id, entity.name))
         new_models_count = len(list(filter(lambda item: not item.id, models_to_save)))
 
-        if len(models_to_save) > 0:
+        if models_to_save:
             self.__models_store.save(models_to_save)
 
-        if new_models_count > 0:
+        if new_models_count:
             self.__maker_store.change_handled_models_count(maker.id, new_models_count)
 
     def load_models(self) -> List[Model]:
@@ -52,41 +53,55 @@ class AutoDetailsService:
     def load_models_dict(self) -> Dict[str, Model]:
         return {model.id: model for model in self.load_models()}
 
-    def save_sub_models(self, model_id: str, sub_models: List[SubModel]):
-        existing_sub_models = self.__sub_model_store.find_by_model_id(model_id)
-        sub_models = sub_models or []
+    def save_submodels(self, model_id: str, submodels: List[SubModel]):
+        model = self.__models_store.find_by_id(model_id)
+        existing_submodels = self.__submodel_store.find_by_model_id(model_id)
+        submodels = submodels or []
 
-        for sm in sub_models:
+        for sm in submodels:
             sm.model_id = model_id
 
-        sub_models_to_save = self.__filter_entities_to_save(existing_sub_models, sub_models,
-                                                            lambda entity: (entity.model_id, entity.name))
+        submodels_to_save = self.__filter_entities_to_save(existing_submodels, submodels,
+                                                           lambda entity: (entity.model_id, entity.name))
 
-        self.__sub_model_store.save(sub_models_to_save)
+        model.submodels_handled = True
+        model.submodels_count = len(submodels_to_save)
 
-    def load_sub_models(self) -> List[SubModel]:
-        return self.__sub_model_store.get_all()
+        self.__submodel_store.save(submodels_to_save)
+        self.__models_store.save(model)
 
-    def load_sub_models_by_model_id_dict(self) -> Dict[str, List[SubModel]]:
+    def load_submodels(self) -> List[SubModel]:
+        return self.__submodel_store.get_all()
+
+    def load_submodels_by_model_id_dict(self) -> Dict[str, List[SubModel]]:
         result = defaultdict(list)
 
-        for sub in self.load_sub_models():
+        for sub in self.load_submodels():
             result[sub.model_id].append(sub)
 
         return result
 
-    def save_years(self, model_id: str, sub_model_id: str, years: List[int]):
+    def save_years(self, model_id: str, submodel_id: str, years: List[int]):
         if not model_id:
             raise ValueError("model_id is required parameter for save_years method.")
 
-        if sub_model_id:
-            sub_model = self.__sub_model_store.find_by_id(sub_model_id)
-            sub_model.years = years
-            self.__sub_model_store.save(sub_model)
+        if not years:
+            return
 
-        model = self.__models_store.find_by_id(model_id)
-        model.years = set().union(model.years or [], years)
-        self.__models_store.save(model)
+        existing_model_years = self.load_years(model_id, submodel_id)
+        model_years = [ModelYear(model_id=model_id, submodel_id=submodel_id, year=year) for year in years]
+        model_years_to_save = self.__filter_entities_to_save(
+            existing_model_years, model_years,
+            lambda entity: (entity.model_id, entity.submodel_id, entity.year)
+        )
+
+        if model_years_to_save:
+            self.__model_year_store.save(model_years_to_save)
+
+        if submodel_id:
+            self.__submodel_store.turn_on_years_handled_flag(submodel_id)
+        else:
+            self.__models_store.turn_on_years_handled_flag(model_id)
 
     def save_model_cookie(self, maker_name, model_name, script_version, cookie):
         existing_cookie = self.__model_cookie_store.find_by_model(maker_name, model_name)
@@ -107,6 +122,15 @@ class AutoDetailsService:
 
     def set_maker_models_count(self, maker_id, models_count):
         self.__maker_store.set_models_count(maker_id, models_count)
+
+    def load_years(self, model_id, submodel_id):
+        if not model_id:
+            raise ValueError("model_id is required parameter.")
+
+        if not submodel_id:
+            return self.__model_year_store.find_by_model_id(model_id)
+        else:
+            return self.__model_year_store.find_by_model_id_and_submodel_id(model_id, submodel_id)
 
     # noinspection PyMethodMayBeStatic
     def __filter_entities_to_save(self, existing_entities: List[Entity], entities_to_save: List[Entity],

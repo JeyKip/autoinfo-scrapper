@@ -7,10 +7,11 @@ from twisted.internet.defer import inlineCallbacks
 
 from autoinfo.cookie import CookieProvider
 from autoinfo.data.mongo import MongoConnector, MongoConnectionSettings, MongoMakerStore, MongoModelStore, \
-    MongoSubModelStore, MongoModelCookieStore
+    MongoSubModelStore, MongoModelCookieStore, MongoModelYearStore
 from autoinfo.services import AutoDetailsService
 from autoinfo.utils import get_value_safely
-from scrapper.scrapper.spiders import AutoInfoMakersSpider, AutoInfoModelsSpider
+from scrapper.scrapper.spiders import AutoInfoYearsSpider, AutoInfoMakersSpider, AutoInfoModelsSpider, \
+    AutoInfoSubModelsSpider
 
 
 def start_scrapping():
@@ -31,11 +32,13 @@ def start_scrapping():
         # create concrete stores
         maker_store = MongoMakerStore()
         models_store = MongoModelStore()
-        sub_models_store = MongoSubModelStore()
-        models_cookie_store = MongoModelCookieStore()
+        submodels_store = MongoSubModelStore()
+        model_cookies_store = MongoModelCookieStore()
+        model_years_store = MongoModelYearStore()
 
         # create services
-        auto_details_service = AutoDetailsService(maker_store, models_store, sub_models_store, models_cookie_store)
+        auto_details_service = AutoDetailsService(maker_store, models_store, submodels_store, model_cookies_store,
+                                                  model_years_store)
 
         # create utils classes
         cookie_provider = CookieProvider()
@@ -55,8 +58,8 @@ def start_scrapping():
             base_api_url = "https://online.autoinfo.com.au/oscar/Aut01nf0iiqq4/a"
             yield process.crawl(AutoInfoMakersSpider, auto_details_service, cookie_provider, base_api_url)
             yield process.crawl(AutoInfoModelsSpider, auto_details_service, cookie_provider, base_api_url)
-            # yield process.crawl(AutoInfoSubModelsSpider, auto_details_service, base_api_url)
-            # yield process.crawl(AutoInfoYearsSpider, auto_details_service, base_api_url)
+            yield process.crawl(AutoInfoSubModelsSpider, auto_details_service, base_api_url)
+            yield process.crawl(AutoInfoYearsSpider, auto_details_service, base_api_url)
 
         run_spiders()
         process.start()

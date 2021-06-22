@@ -1,3 +1,4 @@
+import random
 from typing import List
 
 from scrapy import Request
@@ -21,23 +22,34 @@ class AutoInfoYearsSpider(AutoInfoBaseSpider):
 
     def start_requests(self):
         makers = self.auto_details_service.load_makers_dict()
-        sub_models = self.auto_details_service.load_sub_models_by_model_id_dict()
+        models = self.auto_details_service.load_models_dict()
+        submodels = self.auto_details_service.load_submodels()
 
-        for model in self.auto_details_service.load_models():
-            maker = makers[model.maker_id]
+        # we need to shuffle submodels to prevent using of the same cookie value
+        # from the same model in multiple subsequent requests
+        shuffled_indexes = random.sample([i for i in range(len(submodels))], len(submodels))
 
-            # if model has submodels we need to request all years for submodels and concatenate them in the model object
-            # otherwise we need to request all years by model directly
-            if model.id in sub_models:
-                for sub in sub_models[model.id]:
-                    yield self.__create_download_years_request(maker, model, sub)
-            else:
-                yield self.__create_download_years_request(maker, model)
+        # if model has submodels we need to request all years for submodels and concatenate them in the model object
+        # otherwise we need to request all years by model directly
+        # first of all get all years available for models without submodels
+        for key, model in models.items():
+            if model.submodels_handled and not model.submodels_count and not model.years_handled:
+                yield self.__create_download_years_request(makers[model.maker_id], model)
 
-    def __create_download_years_request(self, maker: Maker, model: Model, sub_model: SubModel = None):
-        sub_model_id = sub_model.id if sub_model else None
-        sub_model_name = sub_model.name if sub_model else "ALL"
-        sub_model_code = self.__hex_decoder.convert_to_hex_string(sub_model_name)
+        # then gather all years for all submodels
+        for index in shuffled_indexes:
+            submodel = submodels[index]
+
+            if not submodel.years_handled:
+                model = models[submodel.model_id]
+                maker = makers[model.maker_id]
+
+                yield self.__create_download_years_request(maker, model, submodel)
+
+    def __create_download_years_request(self, maker: Maker, model: Model, submodel: SubModel = None):
+        submodel_id = submodel.id if submodel else None
+        submodel_name = submodel.name if submodel else "ALL"
+        submodel_code = submodel.code if submodel else self.__hex_decoder.convert_to_hex_string(submodel_name)
 
         request_builder = self.create_basic_request_builder()
         request_builder.add_params({
@@ -46,14 +58,14 @@ class AutoInfoYearsSpider(AutoInfoBaseSpider):
             "0": "year",
             "1": maker.name,
             "2": model.code,
-            "3": sub_model_code
+            "3": submodel_code
         })
         request_url = request_builder.build()
 
-        return Request(request_url, lambda response: self.__parse_years(model.id, sub_model_id, response))
+        return Request(request_url, lambda response: self.__parse_years(model.id, submodel_id, response))
 
-    def __parse_years(self, model_id, sub_model_id, response):
+    def __parse_years(self, model_id, submodel_id, response):
         decoded_response_text = self.decode_response_if_successful(response)
         years: List[int] = self.__parser(decoded_response_text)
 
-        yield YearsListItem(model_id=model_id, sub_model_id=sub_model_id, years=years)
+        yield YearsListItem(model_id=model_id, submodel_id=submodel_id, years=years)

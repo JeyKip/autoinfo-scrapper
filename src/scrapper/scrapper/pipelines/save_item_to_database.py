@@ -9,7 +9,7 @@ class SaveItemToDatabasePipeline:
         self.__handlers = {
             MakersListItem.__name__: self.__handle_makers_list_item,
             ModelsListItem.__name__: self.__handle_models_list_item,
-            SubModelsListItem.__name__: self.__handle_sub_models_list_item,
+            SubModelsListItem.__name__: self.__handle_submodels_list_item,
             YearsListItem.__name__: self.__handle_years_list_item,
             MakerModelsCountItem.__name__: self.__set_maker_models_count,
         }
@@ -32,11 +32,11 @@ class SaveItemToDatabasePipeline:
     def __handle_models_list_item(self, item):
         self.__auto_details_service.save_models(item["maker_name"], item["models"])
 
-    def __handle_sub_models_list_item(self, item):
-        self.__auto_details_service.save_sub_models(item["model_id"], item["sub_models"])
+    def __handle_submodels_list_item(self, item):
+        self.__auto_details_service.save_submodels(item["model_id"], item["submodels"])
 
     def __handle_years_list_item(self, item):
-        self.__auto_details_service.save_years(item["model_id"], item["sub_model_id"], item["years"])
+        self.__auto_details_service.save_years(item["model_id"], item["submodel_id"], item["years"])
 
     def __set_maker_models_count(self, item):
         self.__auto_details_service.set_maker_models_count(item["maker_id"], item["models_count"])
