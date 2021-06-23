@@ -7,11 +7,12 @@ from twisted.internet.defer import inlineCallbacks
 
 from autoinfo.cookie import CookieProvider
 from autoinfo.data.mongo import MongoConnector, MongoConnectionSettings, MongoMakerStore, MongoModelStore, \
-    MongoSubModelStore, MongoModelCookieStore, MongoModelYearStore, MongoSeriesStore, MongoModelSeriesStore
+    MongoSubModelStore, MongoModelCookieStore, MongoModelYearStore, MongoSeriesStore, MongoModelSeriesStore, \
+    MongoEngineStore, MongoModelEngineStore
 from autoinfo.services import AutoDetailsService
 from autoinfo.utils import get_value_safely
 from scrapper.scrapper.spiders import AutoInfoSeriesSpider, AutoInfoMakersSpider, AutoInfoModelsSpider, \
-    AutoInfoSubModelsSpider, AutoInfoYearsSpider
+    AutoInfoSubModelsSpider, AutoInfoYearsSpider, AutoInfoEnginesSpider
 
 
 def start_scrapping():
@@ -37,10 +38,13 @@ def start_scrapping():
         model_years_store = MongoModelYearStore()
         series_store = MongoSeriesStore()
         model_series_store = MongoModelSeriesStore()
+        engine_store = MongoEngineStore()
+        model_engine_store = MongoModelEngineStore()
 
         # create services
         auto_details_service = AutoDetailsService(maker_store, models_store, submodels_store, model_cookies_store,
-                                                  model_years_store, series_store, model_series_store)
+                                                  model_years_store, series_store, model_series_store, engine_store,
+                                                  model_engine_store)
 
         # create utils classes
         cookie_provider = CookieProvider()
@@ -63,6 +67,7 @@ def start_scrapping():
             yield process.crawl(AutoInfoSubModelsSpider, auto_details_service, base_api_url)
             yield process.crawl(AutoInfoYearsSpider, auto_details_service, base_api_url)
             yield process.crawl(AutoInfoSeriesSpider, auto_details_service, base_api_url)
+            yield process.crawl(AutoInfoEnginesSpider, auto_details_service, base_api_url)
 
         run_spiders()
         process.start()

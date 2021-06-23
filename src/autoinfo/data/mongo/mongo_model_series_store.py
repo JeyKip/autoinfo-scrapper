@@ -1,17 +1,19 @@
 from typing import List, Optional
 
-from mongoengine import Document, IntField, StringField
+from mongoengine import Document, IntField, BooleanField, ObjectIdField
 
 from . import MongoBaseStore
+from .fields import NullableObjectIdField
 from ..abstraction import ModelSeriesStore
 from ..plain import ModelSeries
 
 
 class MongoModelSeries(Document):
-    model_id = StringField(required=True)
-    submodel_id = StringField(null=True)
-    series_id = StringField(required=True)
+    model_id = ObjectIdField(required=True)
+    submodel_id = NullableObjectIdField()
+    series_id = ObjectIdField(required=True)
     year = IntField(required=True)
+    engines_handled = BooleanField(required=True, default=False)
 
     meta = {
         'db_alias': 'core',
@@ -48,4 +50,5 @@ class MongoModelSeriesStore(ModelSeriesStore, MongoBaseStore):
 
         return ModelSeries(
             _id=entity.id, model_id=entity.model_id, submodel_id=entity.submodel_id, series_id=entity.series_id,
-            year=entity.year)
+            year=entity.year, engines_handled=entity.engines_handled
+        )

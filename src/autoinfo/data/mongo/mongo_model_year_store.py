@@ -3,13 +3,14 @@ from typing import List, Optional
 from mongoengine import Document, IntField, ObjectIdField, BooleanField
 
 from . import MongoBaseStore
+from .fields import NullableObjectIdField
 from ..abstraction.model_year_store import ModelYearStore
 from ..plain import ModelYear
 
 
 class MongoModelYear(Document):
     model_id = ObjectIdField(required=True)
-    submodel_id = ObjectIdField(null=True)
+    submodel_id = NullableObjectIdField()
     year = IntField(required=True)
     series_handled = BooleanField(required=True, default=False)
 
