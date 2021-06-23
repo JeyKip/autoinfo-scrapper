@@ -1,18 +1,24 @@
 from collections import defaultdict
 from typing import List, Dict
 
-from autoinfo.data.abstraction import MakerStore, ModelStore, SubModelStore, ModelCookieStore, ModelYearStore
-from autoinfo.data.plain import Maker, Entity, Model, SubModel, ModelCookie, ModelYear
+from autoinfo.data.abstraction import MakerStore, ModelStore, SubModelStore, ModelCookieStore, ModelYearStore, \
+    SeriesStore, ModelSeriesStore
+from autoinfo.data.plain import Maker, Entity, Model, SubModel, ModelCookie, ModelYear, Series, ModelSeries
+from autoinfo.decoders import HexDecoder
 
 
 class AutoDetailsService:
     def __init__(self, maker_store: MakerStore, models_store: ModelStore, submodel_store: SubModelStore,
-                 model_cookie_store: ModelCookieStore, model_year_store: ModelYearStore):
+                 model_cookie_store: ModelCookieStore, model_year_store: ModelYearStore, series_store: SeriesStore,
+                 model_series_store: ModelSeriesStore):
         self.__maker_store = maker_store
         self.__models_store = models_store
         self.__submodel_store = submodel_store
         self.__model_cookie_store = model_cookie_store
         self.__model_year_store = model_year_store
+        self.__series_store = series_store
+        self.__model_series_store = model_series_store
+        self.__hex_decoder = HexDecoder()
 
     def save_makers(self, makers: List[Maker]):
         existing_makers = self.__maker_store.get_all()
@@ -73,6 +79,9 @@ class AutoDetailsService:
     def load_submodels(self) -> List[SubModel]:
         return self.__submodel_store.get_all()
 
+    def load_submodels_dict(self) -> Dict[str, SubModel]:
+        return {sub.id: sub for sub in self.__submodel_store.get_all()}
+
     def load_submodels_by_model_id_dict(self) -> Dict[str, List[SubModel]]:
         result = defaultdict(list)
 
@@ -81,15 +90,18 @@ class AutoDetailsService:
 
         return result
 
+    def get_submodel_properties_or_default(self, submodel: SubModel = None):
+        if submodel:
+            return submodel.id, submodel.code
+        else:
+            return None, self.__hex_decoder.convert_to_hex_string("ALL")
+
     def save_years(self, model_id: str, submodel_id: str, years: List[int]):
         if not model_id:
             raise ValueError("model_id is required parameter for save_years method.")
 
-        if not years:
-            return
-
-        existing_model_years = self.load_years(model_id, submodel_id)
-        model_years = [ModelYear(model_id=model_id, submodel_id=submodel_id, year=year) for year in years]
+        existing_model_years = self.load_years_for_model(model_id, submodel_id)
+        model_years = [ModelYear(model_id=model_id, submodel_id=submodel_id, year=year) for year in years or []]
         model_years_to_save = self.__filter_entities_to_save(
             existing_model_years, model_years,
             lambda entity: (entity.model_id, entity.submodel_id, entity.year)
@@ -123,7 +135,10 @@ class AutoDetailsService:
     def set_maker_models_count(self, maker_id, models_count):
         self.__maker_store.set_models_count(maker_id, models_count)
 
-    def load_years(self, model_id, submodel_id):
+    def load_years(self) -> List[ModelYear]:
+        return self.__model_year_store.get_all()
+
+    def load_years_for_model(self, model_id, submodel_id):
         if not model_id:
             raise ValueError("model_id is required parameter.")
 
@@ -131,6 +146,43 @@ class AutoDetailsService:
             return self.__model_year_store.find_by_model_id(model_id)
         else:
             return self.__model_year_store.find_by_model_id_and_submodel_id(model_id, submodel_id)
+
+    def save_series(self, model_id, submodel_id, year_id, series_list: List[Series]):
+        if not model_id:
+            raise ValueError("model_id is required parameter.")
+
+        if not year_id:
+            raise ValueError("year_id is required parameter.")
+
+        self.__save_series(series_list)
+        self.__save_model_series(model_id, submodel_id, year_id, series_list)
+
+    def __save_series(self, series_list: List[Series]):
+        series_to_save = [item for item in series_list if
+                          not self.__series_store.find_by_series_and_chassis(item.series, item.chassis)]
+
+        if series_to_save:
+            self.__series_store.save(series_to_save)
+
+    def __save_model_series(self, model_id, submodel_id, year_id, series_list: List[Series]):
+        model_year = self.__model_year_store.find_by_id(year_id)
+        model_series_to_save = []
+
+        for series in series_list:
+            series_entity = self.__series_store.find_by_series_and_chassis(series.series, series.chassis)
+            model_series_entity = self.__model_series_store.find_by_unique_key(model_id, submodel_id, series_entity.id,
+                                                                               model_year.year)
+
+            if not model_series_entity:
+                model_series = ModelSeries(model_id=model_id, submodel_id=submodel_id, series_id=series_entity.id,
+                                           year=model_year.year)
+                model_series_to_save.append(model_series)
+
+        if model_series_to_save:
+            self.__model_series_store.save(model_series_to_save)
+
+        model_year.series_handled = True
+        self.__model_year_store.save(model_year)
 
     # noinspection PyMethodMayBeStatic
     def __filter_entities_to_save(self, existing_entities: List[Entity], entities_to_save: List[Entity],

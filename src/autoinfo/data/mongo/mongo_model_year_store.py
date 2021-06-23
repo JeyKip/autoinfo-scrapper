@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from mongoengine import Document, IntField, ObjectIdField
+from mongoengine import Document, IntField, ObjectIdField, BooleanField
 
 from . import MongoBaseStore
 from ..abstraction.model_year_store import ModelYearStore
@@ -11,6 +11,7 @@ class MongoModelYear(Document):
     model_id = ObjectIdField(required=True)
     submodel_id = ObjectIdField(null=True)
     year = IntField(required=True)
+    series_handled = BooleanField(required=True, default=False)
 
     meta = {
         'db_alias': 'core',
@@ -54,4 +55,5 @@ class MongoModelYearStore(ModelYearStore, MongoBaseStore):
         if not entity:
             return None
 
-        return ModelYear(_id=entity.id, model_id=entity.model_id, submodel_id=entity.submodel_id, year=entity.year)
+        return ModelYear(_id=entity.id, model_id=entity.model_id, submodel_id=entity.submodel_id, year=entity.year,
+                         series_handled=entity.series_handled)
