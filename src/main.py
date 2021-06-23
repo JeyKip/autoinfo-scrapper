@@ -20,7 +20,8 @@ def start_scrapping():
         config = dotenv_values(".env")
         settings = [
             MongoConnectionSettings(
-                "core", "autoinfo",
+                get_value_safely("MONGO_CONNECTION_ALIAS", config),
+                get_value_safely("MONGO_DATABASE", config),
                 get_value_safely("MONGO_AUTH_USERNAME", config),
                 get_value_safely("MONGO_AUTH_PASSWORD", config),
                 get_value_safely("MONGO_HOST", config),
