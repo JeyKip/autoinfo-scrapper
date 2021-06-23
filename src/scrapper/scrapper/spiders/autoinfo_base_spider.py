@@ -4,6 +4,7 @@ from scrapy import Spider
 
 from autoinfo.decoders import ResponseDecoder, RequestBuilder
 from autoinfo.services import AutoDetailsService
+from scrapper.scrapper.spiders.errors import RequestBannedError, BadResponseError
 
 
 class AutoInfoBaseSpider(Spider):
@@ -41,18 +42,15 @@ class AutoInfoBaseSpider(Spider):
         return request_builder
 
     def decode_response_if_successful(self, response):
-        try:
-            if 200 <= response.status < 300:
-                # if "Unauthorised use has been detected." in response.text:
-                #     # handle a case when request is banned
-                #     return ""
+        if 200 <= response.status < 300:
+            if "Unauthorised use has been detected." in response.text:
+                raise RequestBannedError(f"Request to '{response.url}' has been banned.")
 
-                return self.__response_decoder.decode(response.text[2:-2]).replace("&nbsp;", "")
+            return self.__response_decoder \
+                .decode(response.text[2:-2]) \
+                .replace("&nbsp;", "")
 
-            return ""
-        except Exception as error:
-            self.logger.exception(error)
-            return ""
+        raise BadResponseError(f"Got response with bad status '{response.status}'.")
 
     def parse(self, response, **kwargs):
         pass

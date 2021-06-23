@@ -1,0 +1,2 @@
+class RequestBannedError(Exception):
+    pass
